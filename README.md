@@ -8,3 +8,5 @@ What I DON'T do is go off on my own and start writing fixes and extensions.  I k
 
 The APW is written OO-style.  This makes it easier to keep things sorted and to make specific references to AI when I want it to write method implementations and such.
 Please stick with the OO-style when making changes and/or additions.
+
+The code for the Acrostic Puzzle Writer is in ACE.py.
