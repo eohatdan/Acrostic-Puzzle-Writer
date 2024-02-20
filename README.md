@@ -7,3 +7,4 @@ The APW is a desktop application (which will still work even after the EMP has t
 What I DON'T do is go off on my own and start writing fixes and extensions.  I keep AI in the form of ChatGPT involved at every step of the way, so when I need help I can ask for it and the AI can offer suggestions and code snippets to bail me out.
 
 The APW is written OO-style.  This makes it easier to keep things sorted and to make specific references to AI when I want it to write method implementations and such.
+Please stick with the OO-style when making changes and/or additions.
