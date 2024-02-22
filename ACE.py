@@ -54,7 +54,6 @@ class ValidSolutions:
                     return word_info['word'], letter_positions
 
         return None, None
-
     def check_and_mark_word(self, word, quotation):
         temp_used_positions = quotation.used_positions[:]  # Make a temporary copy of used positions
         letter_positions = []
@@ -64,7 +63,7 @@ class ValidSolutions:
             for i, (q_letter, used) in enumerate(zip(quotation.text, temp_used_positions)):
                 if letter == q_letter and not used:
                     temp_used_positions[i] = True  # Temporarily mark as used
-                    letter_positions.append(i+1)  # Collect the position
+                    letter_positions.append(i)  # Collect the position, already 0-based
                     found = True
                     break
             
@@ -74,7 +73,6 @@ class ValidSolutions:
         # If all letters can be matched, update the actual used positions in the quotation
         quotation.used_positions = temp_used_positions
         return letter_positions
-
 
 class Grid:
     def __init__(self, rows, columns):
@@ -139,7 +137,7 @@ class ApplicationForm(tk.Tk):
         self.display_quote_var = tk.StringVar(value="On")
 
         # Add the 'Display quote' button to the form
-        self.add_display_quote_button()
+        # self.add_display_quote_button()
 
         # Update the grid based on the initial display state ('On')
         self.update_grid_display()
@@ -147,50 +145,86 @@ class ApplicationForm(tk.Tk):
         # Initialize a variable to keep track of the current clue label index
         self.current_clue_label_index = 0
 
+        # Initialize the clue_answer_label for displaying clue answers
+        self.clue_answer_label = tk.Label(self, text="")
+        self.clue_answer_label.pack(side="bottom", pady=10)  # Adjust the placement as needed
+
         # Add the first clue to the form
         self.add_first_clue()
 
+        # Initialize other components...
+        self.setup_ui()
+
+    def setup_ui(self):
+        # Frame to hold the buttons
+        self.buttons_frame = tk.Frame(self)
+        self.buttons_frame.pack(side="bottom", pady=10)
+
+        # Existing button (e.g., 'Display Quote')
+        self.display_quote_btn = tk.Button(self.buttons_frame, text="Display Quote", relief=tk.RAISED)
+        self.display_quote_btn.menu = tk.Menu(self.display_quote_btn, tearoff=0)
+        #self.display_quote_btn['menu'] = self.display_quote_btn.menu
+        self.display_quote_btn.menu.add_radiobutton(label='On', variable=self.display_quote_var, value='On', command=self.update_grid_display)
+        self.display_quote_btn.menu.add_radiobutton(label='Off', variable=self.display_quote_var, value='Off', command=self.update_grid_display)
+        self.display_quote_btn.pack(side="left", padx=5)
+
+        # 'Submit Clue' button
+        self.submit_clue_button = tk.Button(self.buttons_frame, text="Submit Clue", command=self.submit_clue)
+        self.submit_clue_button.pack(side="left", padx=5)
+
+    
+    def submit_clue(self):
+        # Placeholder for the submit clue logic, to be defined
+        pass
+
+
+        
     def add_first_clue(self):
-        # Create a frame for the clues if it doesn't exist
+        # Ensure the clues_frame exists to hold the clues
         if not hasattr(self, 'clues_frame'):
             self.clues_frame = tk.Frame(self)
             self.clues_frame.pack(side="left", fill="y", padx=10, pady=10)
 
-        # Get a five-letter word from ValidSolutions
-        # five_letter_word = self.validsolutions.get_next_unused_word_by_length(5,self.quotation)
-        five_letter_word, letter_positions = self.validsolutions.get_next_unused_word_by_length(5, self.quotation)
-        if not five_letter_word:
-            messagebox.showerror("Error", "No five-letter words available in valid solutions.")
-            return
-
-        # Determine the clue label based on the current clue label index
-        clue_label_text = f"{chr(ord('A') + self.current_clue_label_index)}."
-        self.current_clue_label_index += 1  # Increment for the next clue
-
-        # Create a label for the clue label (e.g., "A.")
-        clue_label = tk.Label(self.clues_frame, text=clue_label_text)
+        # Create the clue label (e.g., "A.")
+        clue_label = tk.Label(self.clues_frame, text="A.")
         clue_label.pack(anchor="nw")
 
-        # Create an entry for the clue text
-        clue_text_entry = tk.Entry(self.clues_frame, width=50)  # Adjust width as needed
-        clue_text_entry.pack(anchor="nw")
+        # Create or update the clue text entry
+        if not hasattr(self, 'clue_text_entry'):
+            self.clue_text_entry = tk.Entry(self.clues_frame, width=50)  # Adjust width as needed
+            self.clue_text_entry.pack(anchor="nw", pady=5)  # Padding for spacing between elements
 
-        # Display the five-letter word as the clue answer (for demonstration purposes)
-        clue_answer_label = tk.Label(self.clues_frame, text=f"Answer: {five_letter_word}")
-        clue_answer_label.pack(anchor="nw")
+        # Set the focus to the clue text entry
+        self.clue_text_entry.focus_set()
 
-        # Set the background color of the cells containing the clue answer to pale yellow
+        # Get a five-letter word from ValidSolutions and its positions in the quotation
+        five_letter_word, letter_positions = self.validsolutions.get_next_unused_word_by_length(5, self.quotation)
+
+        # Format the position numbers for display, adjusting for 1-based indexing
+        position_numbers_text = ', '.join(str(pos + 1) for pos in letter_positions)
+
+        # Construct the text for the clue answer, including the word and its position numbers
+        clue_answer_text = f"Answer: {five_letter_word} (Positions: {position_numbers_text})"
+
+        # Create or update the clue answer label
+        if hasattr(self, 'clue_answer_label'):
+            self.clue_answer_label.config(text=clue_answer_text)
+        else:
+            self.clue_answer_label = tk.Label(self.clues_frame, text=clue_answer_text)
+            self.clue_answer_label.pack(anchor="nw", pady=(5, 0))  # Padding above the label for spacing
+
+        # Set the background color of cells containing the clue answer to pale yellow
         for pos in letter_positions:
-            row = pos // self.grid.columns
-            col = pos % self.grid.columns
+            row = (pos - 1) // self.grid.columns
+            col = (pos - 1) % self.grid.columns
 
             # Ensure the position is within the grid bounds
-            if row < self.grid.rows and col < self.grid.columns:
+            if 0 <= row < self.grid.rows and 0 <= col < self.grid.columns:
                 # Get the label widget for the cell at the specified position
                 cell_label = self.grid_frame.grid_slaves(row=row, column=col)[0]
 
                 # Set the background color of the label to pale yellow
-                cell_label.config(bg='pale goldenrod')  # 'pale goldenrod' is a shade of pale yellow
+                cell_label.config(bg='pale goldenrod')
 
     
     def add_grid_to_form(self):
@@ -232,7 +266,7 @@ class ApplicationForm(tk.Tk):
                 # Create a label for the cell with specified background color and alignment
                 label = tk.Label(self.grid_frame, text=cell_text, width=cell_width, height=cell_height,
                                  borderwidth=1, relief="solid", font=cell_font, bg=cell_bg,
-                                 anchor='nw', justify='left')  # Align text to the northwest (upper left)
+                                 anchor='center', justify='left')  # Align text to the northwest (upper left)
                 label.grid(row=row, column=col, padx=1, pady=1)
 
 
@@ -257,19 +291,6 @@ class ApplicationForm(tk.Tk):
                     messagebox.showwarning("Invalid Input", f"Please enter a positive integer for {prompt_title}.")
             except ValueError:
                 messagebox.showerror("Error", "Invalid input. Please enter a positive integer.")
-
-    def add_display_quote_button(self):
-        # Create a Menubutton for 'Display quote'
-        display_quote_btn = tk.Menubutton(self, text='Display quote', relief=tk.RAISED)
-        display_quote_btn.menu = tk.Menu(display_quote_btn, tearoff=0)
-        display_quote_btn['menu'] = display_quote_btn.menu
-
-        # Add 'On' and 'Off' options to the menu
-        display_quote_btn.menu.add_radiobutton(label='On', variable=self.display_quote_var, value='On', command=self.update_grid_display)
-        display_quote_btn.menu.add_radiobutton(label='Off', variable=self.display_quote_var, value='Off', command=self.update_grid_display)
-
-        # Place the button on the lower row of the form
-        display_quote_btn.pack(side='bottom', pady=10)
 
     def update_grid_display(self):
     # Update the grid display based on the 'Display quote' toggle state
